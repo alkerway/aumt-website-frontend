@@ -1,7 +1,8 @@
-import React, {Component} from 'react'
-import { User } from 'firebase/app'
+import React, {Component} from 'react';
+import { User } from 'firebase/app';
 import './Signups.css'
 import { SignupForm, SignupFormProps } from './SignupForm'
+import Survey from 'surveyjs-react';
 
 
 interface SignupProps {
@@ -47,31 +48,33 @@ export default class Signups extends Component<SignupProps, SignupState> {
                 messageText = err.message
             }
             this.setState({
-                forms: [],
+                forms: [], 
                 messageText
             })
         })
     }
     render() {
         if (this.state.messageText) {
-            return (<p>{this.state.messageText}</p>)
+            return (<p>{this.state.messageText}</p>);
+        } else {
+            return (
+                <div className='signupsContainer'>
+                    no me
+                    {this.state.forms.map((form: SignupFormProps) => {
+                        return (
+                            <div key={form.id} className="formContainer">
+                                <SignupForm 
+                                    title={form.title} 
+                                    id={form.id} 
+                                    closes={form.closes} 
+                                    options={form.options} 
+                                    authedUser={this.props.authedUser}
+                                />
+                            </div>
+                        )
+                    })}
+                </div>
+            );
         }
-        return (
-            <div className='signupsContainer'>
-                {this.state.forms.map((form: SignupFormProps) => {
-                    return (
-                        <div key={form.id} className="formContainer">
-                            <SignupForm 
-                                title={form.title} 
-                                id={form.id} 
-                                closes={form.closes} 
-                                options={form.options} 
-                                authedUser={this.props.authedUser
-                            }></SignupForm>
-                        </div>
-                    )
-                })}
-            </div>
-        )
     }
 }

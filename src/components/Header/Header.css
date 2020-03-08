@@ -11,6 +11,8 @@ img {
 .topMenuContainer {
     width: calc(100% - 310px);
     float: left;
+    background-color: #242424;
+    color: white;
 }
 .socialsContainer {
     width: 155px;
@@ -34,6 +36,8 @@ img {
     .topMenuContainer {
         float: right;
         max-width: calc(100% - 155px);
+        background-color: #242424;
+
     }
     .socialsContainer {
         float: right;

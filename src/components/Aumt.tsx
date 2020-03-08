@@ -23,15 +23,17 @@ export class Aumt extends Component<AumtProps, AumtState> {
         super(props)
         let authedUser = null
         const firebaseConfig = {
-            apiKey: process.env.REACT_APP_FB_API_KEY,
-            authDomain: process.env.REACT_APP_FB_AUTH_DOMAIN,
-            databaseURL: process.env.REACT_APP_FB_DATABASE_URL,
-            projectId: process.env.REACT_APP_FB_PROJECT_ID,
-            storageBucket: process.env.REACT_APP_FB_STORAGE_BUCKET,
-            messagingSenderId: process.env.REACT_APP_FB_MESSAGING_SENDER_ID,
-            appId: process.env.REACT_APP_FB_APP_ID
+          apiKey: "AIzaSyCiKKNhuZ7eUl8gnSFWpg2bH7bLLP8-jZ4",
+          authDomain: "aumt-website.firebaseapp.com",
+          databaseURL: "https://aumt-website.firebaseio.com",
+          projectId: "aumt-website",
+          storageBucket: "aumt-website.appspot.com",
+          messagingSenderId: "736095768201",
+          appId: "1:736095768201:web:bac85c7f6d0eb16d7a4058"
         }
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
         this.state = { authedUser }
         firebase.auth().onAuthStateChanged((user: User | null) => {
             this.setState({
@@ -55,7 +57,7 @@ export class Aumt extends Component<AumtProps, AumtState> {
                         <Redirect to='/'/>
                       </Route>
                       <Route path="/signups">
-                        {this.state.authedUser ? <Signups authedUser={this.state.authedUser}></Signups> : <p>You must sign in to be able to sign up for trainings!</p>}
+                        {this.state.authedUser ?  <Signups authedUser={this.state.authedUser } /> : <p> You must sign in to be able to sign up for trainings! </p>}
                       </Route>
                       <Route path="/events">
                         <p>Events page coming soon! </p>

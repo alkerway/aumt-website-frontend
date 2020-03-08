@@ -6,7 +6,7 @@
 .listContainer {
     text-align: left;
     max-width: 689px;
-    margin: 0 auto
+    margin: 0 auto;
 }
 
 @media only screen and (max-width: 500px) {

@@ -1,3 +1,17 @@
 .App {
     text-align: center;
+    background-color: #242424;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: white;
+}
+
+footer {
+    align-self: flex-end;
 }
