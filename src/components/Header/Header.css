@@ -7,6 +7,7 @@
 }
 .logoImg {
     width: 100%;
+    filter: brightness(1.5)
 }
 .topMenuContainer {
     width: calc(100% - 310px);
@@ -19,7 +20,7 @@
 .socialIcon {
     font-size: 18px;
     cursor: pointer;
-    color: #B33333;
+    color: #CD4D4D;
     line-height: 50px;
     margin-left: 11px;
 }
