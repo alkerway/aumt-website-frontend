@@ -13,25 +13,21 @@ import db from '../../../services/db'
 
 interface TrainingDashboardProps {
     onEditTrainingRequest: (training: AumtWeeklyTraining) => void
+    onFormsLoaded: (forms: AumtWeeklyTraining[]) => void
+    dbForms: AumtWeeklyTraining[]
 }
 
 interface TrainingDashboardState {
     currentForm: AumtWeeklyTraining | null
     loadingForms: boolean
-    allForms: AumtWeeklyTraining[]
-    dbListenerId: string
 }
 
 export class TrainingDashboard extends Component<TrainingDashboardProps, TrainingDashboardState> {
-    private isFirstListen = true
-
     constructor(props: TrainingDashboardProps) {
         super(props)
         this.state = {
             currentForm: null,
-            allForms: [],
             loadingForms: false,
-            dbListenerId: ''
         }
     }
     signMockData = () => {
@@ -40,47 +36,43 @@ export class TrainingDashboard extends Component<TrainingDashboardProps, Trainin
                 console.log('DONE')
             })
     }
-    componentWillUnmount = () => {
-        db.unlisten(this.state.dbListenerId)
-    }
     componentDidMount = () => {
-        this.setState({...this.state, loadingForms: true})
-        db.getAllForms()
-            .then((forms: AumtWeeklyTraining[]) => {
-                if (forms.length) {
-                    this.handleNewForms(forms)
-                }
-                this.setState({
-                    ...this.state,
-                    loadingForms: false,
-                    dbListenerId: db.listenToTrainings(this.onDbChanges)
-                })
+        if (this.props.dbForms.length) {
+            this.handleNewForms(this.props.dbForms)
+        } else {
+            this.setState({...this.state, loadingForms: true})
+            db.getAllForms()
+                .then((forms: AumtWeeklyTraining[]) => {
+                    this.props.onFormsLoaded(forms)
+                    this.setState({
+                        ...this.state,
+                        loadingForms: false,
+                    })
 
-            })
-            .catch((err) => {
-                notification.error({
-                    message: err.toString()
                 })
-                this.setState({
-                    ...this.state,
-                    currentForm: null
+                .catch((err) => {
+                    notification.error({
+                        message: err.toString()
+                    })
+                    this.setState({
+                        ...this.state,
+                        currentForm: null
+                    })
+                    this.setState({...this.state, loadingForms: false})
                 })
-                this.setState({...this.state, loadingForms: false})
-            })
+        }
+    }
+    componentDidUpdate = (prevProps: TrainingDashboardProps, prevState: TrainingDashboardState) => {
+        if (prevProps.dbForms !== this.props.dbForms) {
+            this.handleNewForms(this.props.dbForms)
+        }
     }
     handleNewForms = (forms: AumtWeeklyTraining[]) => {
-        const sortedForms = forms.sort((a, b) => {
-            return a.closes < b.closes ? 1 : -1
-        })
-        this.setState({
-            ...this.state,
-            allForms: sortedForms
-        })
         const currentTime = new Date()
-        let currentForm = sortedForms[sortedForms.length - 1]
-        for (let i = 0; i < sortedForms.length; i ++) {
-            if (sortedForms[i].opens < currentTime) {
-                currentForm = sortedForms[i]
+        let currentForm = forms[forms.length - 1]
+        for (let i = 0; i < forms.length; i ++) {
+            if (forms[i].opens < currentTime) {
+                currentForm = forms[i]
                 break
             }
         }
@@ -91,17 +83,11 @@ export class TrainingDashboard extends Component<TrainingDashboardProps, Trainin
             this.onFormSelect({key: currentFormInNewForms.trainingId})
         }
     }
-    onDbChanges = (forms: AumtWeeklyTraining[]) => {
-        if (!this.isFirstListen && forms && forms.length) {
-            this.handleNewForms(forms)
-        }
-        this.isFirstListen = false
-    }
     onClickTraining = (trainingId: string) => {
         this.onFormSelect({key: trainingId})
     }
     onFormSelect = (event: {key: string}) => {
-        const selectedForm = this.state.allForms.find(f => f.trainingId === event.key)
+        const selectedForm = this.props.dbForms.find(f => f.trainingId === event.key)
         if (selectedForm) {
             this.setState({
                 ...this.state,
@@ -116,7 +102,7 @@ export class TrainingDashboard extends Component<TrainingDashboardProps, Trainin
     getFormsDropdown = () => {
         return (
             <Menu onClick={this.onFormSelect}>
-                {this.state.allForms.map((form) => {
+                {this.props.dbForms.map((form) => {
                     return (
                         <Menu.Item key={form.trainingId}>
                             {form.title}
@@ -164,7 +150,7 @@ export class TrainingDashboard extends Component<TrainingDashboardProps, Trainin
                         <h2 className="sectionHeader">Manage Trainings</h2>
                         <div className="manageTrainingsComponentWrapper">
                             <ManageTrainings
-                                trainings={this.state.allForms}
+                                trainings={this.props.dbForms}
                                 loadingTrainings={this.state.loadingForms}
                                 onTrainingClick={this.onClickTraining}
                                 onEditTrainingRequest={this.props.onEditTrainingRequest}
@@ -173,7 +159,7 @@ export class TrainingDashboard extends Component<TrainingDashboardProps, Trainin
                     </div>
                     <div className="yearStatsWrapper trainingDashboardSection">
                         <h2 className="sectionHeader">Yearly Stats</h2>
-                        <YearStats forms={this.state.allForms} onTrainingClick={this.onClickTraining}></YearStats>
+                        <YearStats forms={this.props.dbForms} onTrainingClick={this.onClickTraining}></YearStats>
                     </div>
                     <div className="clearBoth"></div>
                 </div>

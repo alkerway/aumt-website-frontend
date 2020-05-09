@@ -11,6 +11,7 @@ import { Feedback } from './Feedback/Feedback';
 import MemberDashboard from './Members/MemberDashboard'
 import { AumtEvent, AumtWeeklyTraining } from '../../types'
 import db from '../../services/db'
+import { stringify } from 'querystring';
 
 
 interface MainAdminProps extends RouteComponentProps {
@@ -20,35 +21,65 @@ interface MainAdminState {
     editingTrainingData: AumtWeeklyTraining | null
     editingEventData: AumtEvent | null
     menuOpen: boolean
+    trainingForms: AumtWeeklyTraining[]
+    formDbListenerId: string
     currentSelectedAdmin: string
 }
 
 class MainAdmin extends Component<MainAdminProps, MainAdminState> {
-    private unlisten: null | Function = null;
+    private historyListener: null | Function = null;
+    private isFirstTrainingListen = true
+    
     constructor(props: MainAdminProps) {
         super(props)
         this.state = {
             editingTrainingData: null,
             editingEventData: null,
             menuOpen: false,
+            trainingForms: [],
+            formDbListenerId: '',
             currentSelectedAdmin: 'trainings'
         }
-        this.unlisten = null
+        this.historyListener = null
     }
 
     componentDidMount = () => {
-        this.unlisten = this.props.history.listen(this.onRouteChange);
+        this.historyListener = this.props.history.listen(this.onRouteChange);
         this.setStateFromPathChange(window.location.pathname)
     }
 
     componentWillUnmount = () => {
-      if (this.unlisten) {
-        this.unlisten()
+      if (this.historyListener) {
+        this.historyListener()
+      }
+      if (this.state.formDbListenerId) {
+        db.unlisten(this.state.formDbListenerId)
       }
     }
 
     onRouteChange = (location: any, action: string) => {
         this.setStateFromPathChange(location.pathname)
+    }
+
+    onFormsFirstLoaded = (forms: AumtWeeklyTraining[]) => {
+        this.setState({
+            ...this.state,
+            trainingForms: forms.sort((a, b) => a.closes < b.closes ? 1 : -1),
+            formDbListenerId: db.listenToTrainings(this.onTrainingDbChanges)
+        })
+    }
+
+    onTrainingDbChanges = (forms: AumtWeeklyTraining[]) => {
+        if (!this.isFirstTrainingListen && forms && forms.length) {
+            const sortedForms = forms.sort((a, b) => {
+                return a.closes < b.closes ? 1 : -1
+            })
+            this.setState({
+                ...this.state,
+                trainingForms: sortedForms
+            })
+        }
+        this.isFirstTrainingListen = false
     }
 
     setStateFromPathChange = (windowPath: string) => {
@@ -204,7 +235,10 @@ class MainAdmin extends Component<MainAdminProps, MainAdminState> {
                             </div>
                         </Route>
                         <Route path='/admin'>
-                            <TrainingDashboard onEditTrainingRequest={this.onEditTrainingRequest}></TrainingDashboard>
+                            <TrainingDashboard
+                                onFormsLoaded={this.onFormsFirstLoaded}
+                                dbForms={this.state.trainingForms}
+                                onEditTrainingRequest={this.onEditTrainingRequest}></TrainingDashboard>
                         </Route>
                     </Switch>
                 </div>
