@@ -9,9 +9,8 @@ import './MainAdmin.css'
 import { TrainingDashboard } from './Trainings/TrainingDashboard'
 import { Feedback } from './Feedback/Feedback';
 import MemberDashboard from './Members/MemberDashboard'
-import { AumtEvent, AumtWeeklyTraining } from '../../types'
+import { AumtEvent, AumtWeeklyTraining, AumtMembersObj } from '../../types'
 import db from '../../services/db'
-import { stringify } from 'querystring';
 
 
 interface MainAdminProps extends RouteComponentProps {
@@ -23,13 +22,16 @@ interface MainAdminState {
     menuOpen: boolean
     trainingForms: AumtWeeklyTraining[]
     formDbListenerId: string
+    aumtMembers: AumtMembersObj
+    memberDbListenerId: string
     currentSelectedAdmin: string
 }
 
 class MainAdmin extends Component<MainAdminProps, MainAdminState> {
     private historyListener: null | Function = null;
     private isFirstTrainingListen = true
-    
+    private isFirstMemberListen = true
+
     constructor(props: MainAdminProps) {
         super(props)
         this.state = {
@@ -38,6 +40,8 @@ class MainAdmin extends Component<MainAdminProps, MainAdminState> {
             menuOpen: false,
             trainingForms: [],
             formDbListenerId: '',
+            aumtMembers: {},
+            memberDbListenerId: '',
             currentSelectedAdmin: 'trainings'
         }
         this.historyListener = null
@@ -80,6 +84,24 @@ class MainAdmin extends Component<MainAdminProps, MainAdminState> {
             })
         }
         this.isFirstTrainingListen = false
+    }
+
+    onMembersFirstLoaded = (members: AumtMembersObj) => {
+        this.setState({
+            ...this.state,
+            aumtMembers: members,
+            memberDbListenerId: db.listenToMembers(this.onMemberDbChanges)
+        })
+    }
+
+    onMemberDbChanges = (memberObj: AumtMembersObj) => {
+        if (!this.isFirstMemberListen) {
+            this.setState({
+                ...this.state,
+                aumtMembers: Object.assign({}, memberObj)
+            })
+        }
+        this.isFirstMemberListen = false
     }
 
     setStateFromPathChange = (windowPath: string) => {
@@ -177,7 +199,7 @@ class MainAdmin extends Component<MainAdminProps, MainAdminState> {
                             </div>
                         </Route>
                         <Route path='/admin/members'>
-                            <MemberDashboard></MemberDashboard>
+                            <MemberDashboard onMembersLoaded={this.onMembersFirstLoaded} dbMembers={this.state.aumtMembers}></MemberDashboard>
                         </Route>
                         <Route path='/admin/feedback'>
                             <Feedback></Feedback>

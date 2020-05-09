@@ -10,10 +10,12 @@ import { AumtMembersObj, AumtMember } from '../../../types'
 import db from '../../../services/db'
 import { TableHelper } from './TableHelper'
 
-interface MemberDashboardProps extends RouteComponentProps {}
+interface MemberDashboardProps extends RouteComponentProps {
+    dbMembers: AumtMembersObj
+    onMembersLoaded: (memberObj: AumtMembersObj) => void
+}
 
 interface MemberDashboardState {
-    currentMembers: AumtMembersObj
     loadingMembers: boolean
     tableDataSource: TableDataLine[]
     tableColumns: TableColumn[]
@@ -43,7 +45,6 @@ class MemberDashboard extends Component<MemberDashboardProps, MemberDashboardSta
         super(props)
         this.importMemberInput = React.createRef();
         this.state = {
-            currentMembers: {},
             loadingMembers: false,
             tableDataSource: [],
             tableColumns: [],
@@ -78,6 +79,23 @@ class MemberDashboard extends Component<MemberDashboardProps, MemberDashboardSta
     componentWillUnmount = () => {
         db.unlisten(this.state.dbListenerId)
     }
+    componentDidUpdate = (prevProps: MemberDashboardProps, prevState: MemberDashboardState) => {
+        if (prevProps.dbMembers !== this.props.dbMembers) {
+            this.handleUpdatedMembers(this.props.dbMembers)
+        }
+    }
+    handleUpdatedMembers = (memberObj: AumtMembersObj) => {
+        this.setTableData(memberObj)
+        if (this.state.selectedMember) {
+            const changedMember = this.state.tableDataSource.find(line => line.key === this.state.selectedMember?.key)
+            if (changedMember) {
+                this.setState({
+                    ...this.state,
+                    selectedMember: changedMember
+                })
+            }
+        }
+    }
     tableHelperChange = (helper: TableHelper) => {
         if (this.emptyHelper && helper) {
             this.helper = helper
@@ -86,39 +104,22 @@ class MemberDashboard extends Component<MemberDashboardProps, MemberDashboardSta
         }
     }
     getMembers = () => {
-        this.setState({...this.state, loadingMembers: true})
-        db.getAllMembers()
-            .then((memberObj) => {
-                this.setTableData(memberObj)
-                this.setState({
-                    ...this.state,
-                    dbListenerId: db.listenToMembers(this.onDbChange)
-                })
-            })
-            .catch((err) => {
-                notification.error({
-                    message: 'Could not get members: ' + err.toString()
-                })
-            })
-            .finally(() => {
-                this.setState({...this.state, loadingMembers: false})
-            })
-    } 
-    onDbChange = (memberObj: AumtMembersObj) => {
-        if (!this.firstListen) {
-            this.setTableData(memberObj)
-            if (this.state.selectedMember) {
-                const changedMember = this.state.tableDataSource.find(line => line.key === this.state.selectedMember?.key)
-                if (changedMember) {
-                    this.setState({
-                        ...this.state,
-                        selectedMember: changedMember
+        if (Object.keys(this.props.dbMembers).length > 0) {
+            this.handleUpdatedMembers(this.props.dbMembers)
+        } else {
+            this.setState({...this.state, loadingMembers: true})
+            db.getAllMembers()
+                .then(this.props.onMembersLoaded)
+                .catch((err) => {
+                    notification.error({
+                        message: 'Could not get members: ' + err.toString()
                     })
-                }
-            }
+                })
+                .finally(() => {
+                    this.setState({...this.state, loadingMembers: false})
+                })
         }
-        this.firstListen = false
-    }
+    } 
     onSignupSemChange = (sem: 'S1' | 'S2') => {
         this.setState({
             ...this.state,
@@ -163,6 +164,7 @@ class MemberDashboard extends Component<MemberDashboardProps, MemberDashboardSta
     setTableData = (memberObj: AumtMembersObj) => {
         if (this.helper) {
             const {lines, columns} = this.helper.getTableFromMembers(memberObj)
+            console.log(lines, columns)
             this.setState({
                 ...this.state,
                 tableDataSource: lines,
